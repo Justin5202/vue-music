@@ -1,16 +1,22 @@
 <template>
 	<div class="music-list">
 		<div class="back">
-			<i class="icon-back"></i>
+			<i class="icon-back" @click="back"></i>
 		</div>
 		<h1 class="title" v-html="title"></h1>
 		<div class="bg-image" :style="bgStyle" ref="bgImage">
-			<div class="filter"></div>
+      <div class="play-wrapper">
+        <div class="play" v-show="songs.length > 0" ref="playBtn">
+          <i class="icon-play"></i>
+          <span class="text">随机播放全部</span>
+        </div>
+      </div>
+			<div class="filter" ref="filter"></div>
 		</div>
     <div class="bg-layer" ref="layer"></div>
 		<scroll @scroll="scroll" :probeType="probeType" :listenScroll="listenScroll" :data="songs" class="list" ref="list">
 			<div class="song-list-wrapper">
-				<song-list :songs="songs"></song-list>
+				<song-list @select="selectItem" :songs="songs"></song-list>
 			</div>
 		</scroll>
 	</div>
@@ -19,8 +25,12 @@
 <script>
 	import Scroll from 'base/scroll/scroll'
 	import SongList from 'base/song-list/song-list'
+  import {prefixStyle} from 'common/js/dom'
+  import {mapActions} from 'vuex'
 
   const RESERVED_HEIGHT = 40
+  const transform = prefixStyle('transform')
+  const backdrop = prefixStyle('backdrop')
 
 	export default {
 		components: {
@@ -58,6 +68,18 @@
     methods: {
       scroll(pos) {
         this.scrollY = pos.y
+      },
+      selectItem(item, index) {
+        this.selectPlay({
+          list: this.songs,
+          index
+        })
+      },
+      ...mapActions([
+        'selectPlay'
+      ]),
+      back() {
+        this.$router.back()
       }
     },
     watch: {
@@ -65,21 +87,29 @@
         let translateY = Math.max(this.minTranslateY, newVal)
         let zIndex = 0
         let scale = 1
-        this.$refs.layer.style['transform'] = `translate3d(0, ${translateY}px, 0)`
-        this.$refs.layer.style['-webkit-transform'] = `translate3d(0, ${translateY}px, 0)`
+        let blur = 0
+        this.$refs.layer.style[transform] = `translate3d(0, ${translateY}px, 0)`
         const persent = Math.abs(newVal / this.imageHeight)
         if(newVal > 0) {
           scale = 1 + persent
+          zIndex = 10
+        } else {
+          blur = Math.min(20 * persent, 20)
         }
+        //手机效果渐变增强
+        this.$refs.filter.style[backdrop] = `blur(${blur}px)`
         if(newVal < this.minTranslateY) {
           zIndex = 10
           this.$refs.bgImage.style.paddingTop = 0
           this.$refs.bgImage.style.height = `${RESERVED_HEIGHT}px`
+          this.$refs.playBtn.style.display = 'none'
         } else {
           this.$refs.bgImage.style.paddingTop = '70%'
           this.$refs.bgImage.style.height = 0
+          this.$refs.playBtn.style.display = ''
         }
         this.$refs.bgImage.style.zIndex = zIndex
+        this.$refs.bgImage.style[transform] = `scale(${scale})`
       }
     },
 		computed: {
