@@ -25,6 +25,12 @@ const Search = (resolve) => {
   })
 }
 
+const SingerDetail = (resolve) => {
+  import('components/singer-detail/singer-detail').then((module) => {
+    resolve(module)
+  })
+}
+
 Vue.use(Router)
 
 export default new Router({
@@ -41,7 +47,13 @@ export default new Router({
     //歌手
     {
     	path: '/singer',
-    	component: Singer
+    	component: Singer,
+      children: [
+        {
+          path: ':id',
+          component: SingerDetail
+        }
+      ]
     },
     //排行
     {
